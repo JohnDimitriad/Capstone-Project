@@ -1,0 +1,172 @@
+{% load static %}
+
+<html lang="en">
+<head>
+    <meta name="description" content="Home Page"/>
+    <meta http-equiv="Author" content="Ioannis Iason Dimitriadis"/>
+    <title>{{ recipe.name }}</title>
+    <link rel="icon" href="{% static 'CapstoneProject/images/logo.png' %}" type="image/png">
+    
+    <!-- CSS -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.3.0/font/bootstrap-icons.css">
+    <link href="{% static 'CapstoneProject/css/styles.css' %}" type="text/css" rel="stylesheet">
+    
+    <!-- Bootstrap -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous"></script>
+    
+    <!-- JavaScript -->
+    <script src="{% static 'CapstoneProject/javascript/darkmode.js' %}" defer></script>
+    <script src="{% static 'CapstoneProject/javascript/selectedbuttons.js' %}" defer></script>
+    <script src="{% static 'CapstoneProject/javascript/chefgpt.js' %}" defer></script>
+    <script src="{% static 'CapstoneProject/javascript/chatbot.js' %}" defer></script>
+    
+    <!-- jQuery -->
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="navbar navbar-expand-lg bg-body-tertiary sticky-top">
+        <div class="container-fluid">
+            <a class="navbar-brand" href="{% url 'home:index' %}">
+                <img src="{% static 'CapstoneProject/images/logo.png' %}" alt="Logo" width="30" height="24" class="d-inline-block align-text-top">
+                Capstone Project Name
+            </a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNavDropdown" aria-controls="navbarNavDropdown" aria-expanded="false" aria-label="Toggle navigation">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNavDropdown">
+                <ul class="navbar-nav me-auto">
+                    <li class="nav-item">
+                        <a class="nav-link" href="{% url 'home:index' %}">Home Page</a>
+                    </li>
+                    <li class="nav-item">
+                        <button id="dark-mode-toggle" class="btn btn-outline-secondary nav-link">Enable Dark Mode</button>
+                    </li>
+                </ul>
+                {% if user.is_authenticated %}
+                <ul class="navbar-nav">
+                    <!-- If user is logged in, show "View Profile" and hide login/register -->
+                    <li class="nav-item">
+                        <a class="nav-link" href="{% url 'home:profile' %}">View Profile</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{% url 'home:logout' %}">Logout</a>
+                    </li>
+                {% endif %}
+                {% if not user.is_authenticated %}
+                <ul class="navbar-nav">
+                    <!-- If user is not logged in, show "Login" and "Register" -->
+                    <li class="nav-item">
+                        <a class="nav-link" href="{% url 'home:login' %}">Login</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{% url 'home:register' %}">Register</a>
+                    </li>
+                </ul>
+                {% endif %}
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <div class="container my-5">
+        <div class="row">
+            <!-- Recipe Details -->
+            <div class="col-lg-8">
+                <div class="card mb-4 shadow-sm">
+                    <div class="card-body">
+                        <h1 class="card-title">{{ recipe.name }}</h1>
+                        <p class="text-muted"><strong>Submitted:</strong> {{ recipe.submitted }} | <strong>Prep time:</strong> {{ recipe.minutes }} min</p>
+                    </div>
+                </div>
+
+                <!-- Ingredients -->
+                <div class="card mb-4 shadow-sm">
+                    <div class="card-header bg-primary text-white">
+                        Ingredients
+                    </div>
+                    <ul class="list-group list-group-flush">
+                        {% for ingredient in ingredients %}
+                        <li class="list-group-item">{{ ingredient }}</li>
+                        {% endfor %}
+                    </ul>
+                </div>
+
+                <!-- Steps -->
+                <div class="card mb-4 shadow-sm">
+                    <div class="card-header bg-success text-white">
+                        Steps
+                    </div>
+                    <ol class="list-group list-group-numbered list-group-flush">
+                        {% for step in steps %}
+                        <li class="list-group-item">{{ step }}</li>
+                        {% endfor %}
+                    </ol>
+                </div>
+
+                <!-- Nutrition -->
+                <div class="card mb-4 shadow-sm">
+                    <div class="card-header bg-warning text-dark">
+                        Nutrition
+                    </div>
+                    <ul class="list-group list-group-flush">
+                        {% for label, value in recipe.get_nutrition_info %}
+                        <li class="list-group-item">{{ label }}: {{ value }}</li>
+                        {% endfor %}
+                    </ul>
+                </div>
+
+                <!-- Reviews -->
+                <div class="card mb-4 shadow-sm">
+                    <div class="card-header bg-info text-white">
+                        Reviews
+                    </div>
+                    <div class="card-body">
+                        {% if interactions %}
+                            {% for review in interactions %}
+                            <div class="border p-3 mb-2 rounded shadow-sm">
+                                <strong>User {{ review.user_id }}</strong> — ⭐ {{ review.rating }}<br>
+                                <small class="text-muted">{{ review.date }}</small>
+                                <p class="mt-2">{{ review.review }}</p>
+                            </div>
+                            {% endfor %}
+                        {% else %}
+                            <p>No reviews yet.</p>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <a href="{% url 'home:index' %}" class="btn btn-primary mt-3">← Back to Recipes</a>
+            </div>
+
+            <!-- Sidebar (optional) -->
+            <div class="col-lg-4">
+                <div class="card mb-4 shadow-sm">
+                    <div class="card-header bg-dark text-white">
+                        Recipe Info
+                    </div>
+                    <div class="card-body">
+                        <p><strong>Name:</strong> {{ recipe.name }}</p>
+                        <p><strong>Submitted:</strong> {{ recipe.submitted }}</p>
+                        <p><strong>Prep time:</strong> {{ recipe.minutes }} min</p>
+                        <p><strong>Tags:</strong> {{ tags|join:", " }}</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <img src="{% static 'CapstoneProject/images/logo.png' %}" alt="Logo" width="30" height="24" class="d-inline-block align-text-top">
+        <p>Capstone Project Name © 2025</p>
+        <div class="social-media">
+            <p>Contact us at: website@acg.edu or by using the following links:</p>
+            <a href="https://www.facebook.com" target="_blank"><i class="bi bi-facebook"></i></a>
+            <a href="https://www.twitter.com" target="_blank"><i class="bi bi-twitter"></i></a>
+            <a href="https://www.instagram.com" target="_blank"><i class="bi bi-instagram"></i></a>
+        </div>
+    </footer>
+</body>
+</html>

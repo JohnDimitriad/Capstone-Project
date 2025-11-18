@@ -1,0 +1,229 @@
+{% load static %}
+
+<html lang="en">
+<head>
+    <meta name="description" content="Home Page"/>
+    <meta http-equiv="Author" content="Ioannis Iason Dimitriadis"/>
+    <title>Home Page</title>
+    <link rel="icon" href="{% static 'CapstoneProject/images/logo.png' %}" type="image/png">
+    
+    <!-- CSS -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.3.0/font/bootstrap-icons.css">
+    <link href="{% static 'CapstoneProject/css/styles.css' %}" type="text/css" rel="stylesheet">
+    
+    <!-- Bootstrap -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous"></script>
+    
+    <!-- JavaScript -->
+    <script src="{% static 'CapstoneProject/javascript/darkmode.js' %}" defer></script>
+    <script src="{% static 'CapstoneProject/javascript/ingredients.js' %}" defer></script>
+    <script src="{% static 'CapstoneProject/javascript/chefgpt.js' %}" defer></script>
+    <script src="{% static 'CapstoneProject/javascript/load_recipes.js' %}" defer></script>
+    <script src="{% static 'CapstoneProject/javascript/filter_recipes.js' %}" defer></script>
+    
+    <!-- jQuery -->
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="navbar navbar-expand-lg bg-body-tertiary sticky-top">
+        <div class="container-fluid">
+            <a class="navbar-brand" href="{% url 'home:index' %}">
+                <img src="{% static 'CapstoneProject/images/logo.png' %}" alt="Logo" width="30" height="24" class="d-inline-block align-text-top">
+                Capstone Project Name
+            </a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNavDropdown" aria-controls="navbarNavDropdown" aria-expanded="false" aria-label="Toggle navigation">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNavDropdown">
+                <ul class="navbar-nav me-auto">
+                    <li class="nav-item">
+                        <a class="nav-link" href="{% url 'home:index' %}">Home Page</a>
+                    </li>
+                    <li class="nav-item">
+                        <button id="dark-mode-toggle" class="btn btn-outline-secondary nav-link">Enable Dark Mode</button>
+                    </li>
+                </ul>
+                {% if user.is_authenticated %}
+                <ul class="navbar-nav">
+                    <!-- If user is logged in, show "View Profile" and hide login/register -->
+                    <li class="nav-item">
+                        <a class="nav-link" href="{% url 'home:profile' %}">View Profile</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{% url 'home:logout' %}">Logout</a>
+                    </li>
+                {% endif %}
+                {% if not user.is_authenticated %}
+                <ul class="navbar-nav">
+                    <!-- If user is not logged in, show "Login" and "Register" -->
+                    <li class="nav-item">
+                        <a class="nav-link" href="{% url 'home:login' %}">Login</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{% url 'home:register' %}">Register</a>
+                    </li>
+                </ul>
+                {% endif %}
+            </div>
+        </div>
+    </nav>
+
+    <!-- Banner Image -->
+    <img src="{% static 'CapstoneProject/images/banner.png' %}" alt="Banner Image" style="max-height: 400px; width: auto;" class="img-fluid mb-4">
+    
+    <div class="container my-4">
+        <div class="row">
+            <!-- LEFT COLUMN: Ingredients -->
+            <div class="col-md-4">
+                <div class="card shadow-sm h-100">
+                    <div class="card-header bg-success text-white">
+                        <h5 class="mb-0">Available Ingredients</h5>
+                    </div>
+                    <div class="card-body">
+                        <p class="text-muted small">
+                            Assume you have salt, pepper and water available.
+                        </p>
+                        <h6>Ingredients</h6>
+                        <div class="row g-2 mb-3">
+                            {% for ingredient in all_ingredients %}
+                            <div class="col-6 ingredient-item" style="display:none;">
+                            <button class="btn btn-outline-secondary btn-sm w-100 ingredient-btn" data-ingredient="{{ ingredient }}">
+                                {{ ingredient }}
+                            </button>
+                            </div>
+                            {% endfor %}
+                        </div>
+                        <!-- Search box -->
+                        <div class="mb-3">
+                            <input type="text" class="form-control" placeholder="Search for an Ingredient">
+                        </div>   
+                        <div class="text-center mt-3">
+                            <button id="show-more-btn" class="btn btn-primary btn-sm">Show More</button>
+                            <button id="show-less-btn" class="btn btn-secondary btn-sm" style="display:none;">Show Less</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- RIGHT COLUMN: Recipes -->
+            <div class="col-md-8">
+                <div class="card shadow-sm h-100">
+                    <div class="card-header bg-danger text-white">
+                        <h5 class="mb-0">Our top rated recipes!</h5>
+                    </div>
+                    <div class="card-body">
+                        <!-- Recipe results will go here -->
+                        {% if page_obj %}
+                            <div class="accordion" id="recipeAccordion">
+                                {% for recipe in page_obj %}
+                                <div class="accordion-item" data-ingredients="{{ recipe.get_ingredients|join:", " }}">
+                                    <h2 class="accordion-header" id="heading{{ forloop.counter }}">
+                                        <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse"
+                                            data-bs-target="#collapse{{ forloop.counter }}" aria-expanded="false"
+                                            aria-controls="collapse{{ forloop.counter }}">
+                                            <strong>{{ recipe.name }}</strong> — ⭐ {{ recipe.avg_rating|default:"N/A" }} ({{ recipe.review_count }} reviews)
+                                        </button>
+                                    </h2>
+                                    <div id="collapse{{ forloop.counter }}" class="accordion-collapse collapse"
+                                        aria-labelledby="heading{{ forloop.counter }}" data-bs-parent="#recipeAccordion">
+                                        <div class="accordion-body">
+                                            <ul class="list-unstyled mb-2">
+                                                <li><strong>Submitted:</strong> {{ recipe.submitted }}</li>
+                                                <li><strong>Prep time:</strong> {{ recipe.minutes }} minutes</li>
+                                                <li><strong>Ingredients:</strong> {{ recipe.n_ingredients }}</li>
+                                                <li><strong>Steps:</strong>
+                                                    {% if recipe.n_steps < 5 %} Short
+                                                    {% elif recipe.n_steps < 10 %} Medium
+                                                    {% else %} Long {% endif %}
+                                                    ({{ recipe.n_steps }} steps)
+                                                </li>
+                                                <li><strong>Tags:</strong> {{ recipe.get_tags|join:", " }}</li>
+                                            </ul>
+                                            <li>
+                                                <strong>Nutrition:</strong>
+                                                <ul class="mb-0">
+                                                    {% for label, value in recipe.get_nutrition_info%}
+                                                    <li>{{ label }}: {{ value }}</li>
+                                                    {% endfor %}
+                                                </ul>
+                                            </li>
+                                            <a href="{% url 'home:recipe' recipe.recipe_id %}" class="btn btn-primary btn-sm mt-2">View Full Recipe</a>
+                                        </div>
+                                    </div>
+                                </div>
+                                {% endfor %}
+                            </div>
+
+                            <!-- Pagination -->
+                            <nav aria-label="Recipe pagination" class="mt-3">
+                            <ul class="pagination justify-content-center">
+                                {% if page_obj.has_previous %}
+                                <li class="page-item">
+                                    <a class="page-link" href="?page={{ page_obj.previous_page_number }}">Previous</a>
+                                </li>
+                                {% endif %}
+
+                                {% for num in page_obj.paginator.page_range %}
+                                {% if num >= page_obj.number|add:'-2' and num <= page_obj.number|add:'2' %}
+                                    {% if num == page_obj.number %}
+                                    <li class="page-item active" aria-current="page">
+                                        <a class="page-link" href="?page={{ num }}">{{ num }}</a>
+                                    </li>
+                                    {% else %}
+                                    <li class="page-item">
+                                        <a class="page-link" href="?page={{ num }}">{{ num }}</a>
+                                    </li>
+                                    {% endif %}
+                                {% endif %}
+                                {% endfor %}
+
+                                {% if page_obj.has_next %}
+                                <li class="page-item">
+                                    <a class="page-link" href="?page={{ page_obj.next_page_number }}">Next</a>
+                                </li>
+                                {% endif %}
+                            </ul>
+                            </nav>
+                            {% else %}
+                            <p class="text-muted">No recipes found.</p>
+                            {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="card shadow-sm mt-4">
+            <div class="card-header bg-primary text-white">
+                <h5 class="mb-0">Ask ChefGPT</h5>
+            </div>
+            <div class="card-body">
+                <form id="chefgpt-form" method="post" action="{% url 'home:chefgpt' %}">
+                    {% csrf_token %}
+                    <div class="input-group mb-3">
+                        <input type="text" name="question" id="chefgpt-input" class="form-control" placeholder="Ask for a recipe suggestion..." required>
+                        <button class="btn btn-primary" type="submit">Ask</button>
+                    </div>
+                </form>
+                <div id="chefgpt-response" class="mt-3 text-muted">
+                    <p>No question asked yet.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    
+
+    <!-- Footer -->
+    <footer class="footer">
+        <img src="{% static 'CapstoneProject/images/logo.png' %}" alt="Logo" width="30" height="24" class="d-inline-block align-text-top">
+        <p>Capstone Project Name © 2025</p>
+        <div class="social-media">
+            <p>Contact us at: website@acg.edu or by using the following links:</p>
+            <a href="https://www.facebook.com" target="_blank"><i class="bi bi-facebook"></i></a>
+            <a href="https://www.twitter.com" target="_blank"><i class="bi bi-twitter"></i></a>
+            <a href="https://www.instagram.com" target="_blank"><i class="bi bi-instagram"></i></a>
+        </div>
+    </footer>
+</body>
+</html>

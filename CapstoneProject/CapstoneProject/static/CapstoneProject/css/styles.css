@@ -1,0 +1,158 @@
+/* Basic styling */
+body, .footer {
+    font-family: Arial, sans-serif;
+}
+
+/* Dark mode */
+body.dark-mode {
+    background-color: #474439;
+    color: #ffffff;
+}
+
+/* Basic styling */
+html, body {
+    height: 100%;
+    margin: 0;
+    font-family: Arial, sans-serif;
+}
+
+/* Container for main content and footer */
+body {
+    display: flex;
+    flex-direction: column;
+}
+
+/* Main content should take up available space */
+.container {
+    flex: 1;
+}
+
+/* Navigation Styling */
+.navigation {
+    background-color: #333;
+    padding: 10px;
+    text-align: center;
+}
+
+.navigation a {
+    color: #fff;
+    margin: 0 15px;
+    text-decoration: none;
+}
+
+.footer {
+    background-color: #333;
+    color: #fff;
+    padding: 5px 10px;
+    text-align: center;
+    width: 100%;
+	font-size: 0.9rem;
+}
+
+.footer .social-media a {
+    color: #fff;
+    margin: 0 8px;
+    font-size: 1.1rem;
+    text-decoration: none;
+}
+
+.rating label {
+    margin: 0 10px;
+}
+.review-card {
+    background-color: #f9f9f9;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.review-details p {
+    margin: 0;
+    padding: 0;
+}
+
+.review-card p {
+    font-size: 16px;
+    color: #333;
+}
+
+#reviews-section {
+    margin-top: 30px;
+}
+
+#no-reviews-message {
+    font-size: 1.1rem;
+    color: #6c757d;
+}
+
+/* Review form background */
+#review-form {
+    background-color: #f8f9fa;
+    padding: 20px;
+    border-radius: 5px;
+}
+
+#review-form button {
+    background-color: #007bff;
+    border-color: #007bff;
+}
+
+.navbar {
+    position: sticky;
+    top: 0;
+    z-index: 1030;
+}
+
+.card-img-top {
+    width: 200px;
+    height: 300px;
+    object-fit: contain;
+    border-radius: 5px;
+    display: block;
+    margin: 0 auto;
+}
+
+.card {
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+}
+
+.card-body {
+    flex-grow: 1;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+}
+
+.hidden {
+    display: none;
+}
+
+.carousel .card {
+    width: 95%;
+    max-width: 900px;
+}
+
+@media (max-width: 576px) {
+    .carousel .card-img-top {
+        height: 150px;
+    }
+}
+
+#chatbot-container {
+    visibility: hidden;
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    width: 300px;
+    height: 400px;
+    background: white;
+    border-radius: 10px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+    display: flex;
+    flex-direction: column;
+    font-family: Arial, sans-serif;
+    z-index: 9999;
+    animation: slideInUp 0.5s ease;
+    transition: all 0.3s ease;
+}
