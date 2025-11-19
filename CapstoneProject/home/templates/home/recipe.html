@@ -2,7 +2,7 @@
 
 <html lang="en">
 <head>
-    <meta name="description" content="Home Page"/>
+    <meta name="description" content="Recipe Page"/>
     <meta http-equiv="Author" content="Ioannis Iason Dimitriadis"/>
     <title>{{ recipe.name }}</title>
     <link rel="icon" href="{% static 'CapstoneProject/images/logo.png' %}" type="image/png">
@@ -98,9 +98,17 @@
                     <div class="card-header bg-success text-white">
                         Steps
                     </div>
-                    <ol class="list-group list-group-numbered list-group-flush">
+                    <ol id="steps-list" class="list-group list-group-numbered list-group-flush">
                         {% for step in steps %}
-                        <li class="list-group-item">{{ step }}</li>
+                        <li class="list-group-item d-flex align-items-start">
+                            <div class="form-check me-3">
+                                <input class="form-check-input step-checkbox" type="checkbox"
+                                       id="step-{{ forloop.counter0 }}" data-step-index="{{ forloop.counter0 }}">
+                            </div>
+                            <div class="step-text">
+                                {{ step }}
+                            </div>
+                        </li>
                         {% endfor %}
                     </ol>
                 </div>

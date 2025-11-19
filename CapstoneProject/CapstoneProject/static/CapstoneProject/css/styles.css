@@ -3,10 +3,9 @@ body, .footer {
     font-family: Arial, sans-serif;
 }
 
-/* Dark mode */
 body.dark-mode {
-    background-color: #474439;
-    color: #ffffff;
+    background-color: #1e1f23;
+    color: #e5e5e5;
 }
 
 /* Basic styling */

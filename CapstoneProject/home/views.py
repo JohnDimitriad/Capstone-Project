@@ -15,7 +15,8 @@ from django.db import models
 from openai import OpenAI
 import os, json
 
-client = OpenAI(api_key=settings.OPENAI_API_KEY)
+def get_openai_client():
+    return OpenAI(api_key=settings.OPENAI_API_KEY)
 
 
 def chefgpt(request):
@@ -68,6 +69,7 @@ def chefgpt(request):
 
         # --- Step 5️⃣: Ask GPT, but constrain it to the DB context ---
         try:
+            client = get_openai_client()
             response = client.chat.completions.create(
                 model="gpt-3.5-turbo",
                 messages=[
