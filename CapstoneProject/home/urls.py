@@ -6,6 +6,7 @@ app_name = 'home'
 urlpatterns = [
     path('', views.home, name='index'),
     path('recipe/<int:recipe_id>/', views.recipe, name='recipe'),
+    path("add_recipe/", views.add_recipe, name="add_recipe"),
     path('chefgpt/', views.chefgpt, name='chefgpt'),
     path('login/', views.login_view, name='login'),
     path('register/', views.register, name='register'),

@@ -26,6 +26,12 @@ body {
     flex: 1;
 }
 
+.banner img {
+    width: auto;
+    height: auto;
+    max-width: 100%;   /* prevents overflow */
+}
+
 /* Navigation Styling */
 .navigation {
     background-color: #333;

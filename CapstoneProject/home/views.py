@@ -1,4 +1,5 @@
 from django.contrib.auth import login, authenticate, logout, update_session_auth_hash
+from django.contrib.admin.views.decorators import staff_member_required
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
 from django.views.decorators.http import require_GET
@@ -15,9 +16,9 @@ from django.db import models
 from openai import OpenAI
 import os, json
 
+
 def get_openai_client():
     return OpenAI(api_key=settings.OPENAI_API_KEY)
-
 
 def chefgpt(request):
     if request.method == "POST":
@@ -26,13 +27,13 @@ def chefgpt(request):
         if not question:
             return JsonResponse({"error": "Empty question"}, status=400)
 
-        # --- Step 1️⃣: Do a broad search for possible matches ---
+        # --- Step 1: Do a broad search for possible matches ---
         initial_matches = Recipe.objects.filter(
             Q(name__icontains=question) |
             Q(description__icontains=question)
         )
 
-        # --- Step 2️⃣: Fallback — search manually in JSON-like fields ---
+        # --- Step 2: Fallback — search manually in JSON-like fields ---
         related_recipes = list(initial_matches)
         question_lower = question.lower()
 
@@ -51,13 +52,13 @@ def chefgpt(request):
         # Limit to top 5
         related_recipes = related_recipes[:5]
 
-        # --- Step 3️⃣: Handle no matches ---
+        # --- Step 3: Handle no matches ---
         if not related_recipes:
             return JsonResponse({
                 "answer": "I couldn’t find any matching recipes in our database."
             })
 
-        # --- Step 4️⃣: Build database context for GPT ---
+        # --- Step 4: Build database context for GPT ---
         recipe_summaries = []
         for r in related_recipes:
             ingredients = ", ".join(r.get_ingredients()[:5])
@@ -67,7 +68,7 @@ def chefgpt(request):
 
         database_context = "\n".join(recipe_summaries)
 
-        # --- Step 5️⃣: Ask GPT, but constrain it to the DB context ---
+        # --- Step 5: Ask GPT, but constrain it to the DB context ---
         try:
             client = get_openai_client()
             response = client.chat.completions.create(
@@ -279,3 +280,25 @@ def edit_profile(request):
 def logout_view(request):
     logout(request)
     return redirect('home:login')
+
+@staff_member_required
+def add_recipe(request):
+    if request.method == "POST":
+        Recipe.objects.create(
+            name = request.POST["name"],
+            recipe_id = request.POST["recipe_id"],
+            minutes = request.POST["minutes"],
+            contributor_id = request.POST["contributor_id"],
+            submitted = request.POST["submitted"],
+            description = request.POST["description"],
+            tags = request.POST["tags"],
+            nutrition = request.POST["nutrition"],
+            n_steps = request.POST["n_steps"],
+            steps = request.POST["steps"],
+            ingredients = request.POST["ingredients"],
+            n_ingredients = request.POST["n_ingredients"],
+        )
+
+        return redirect("home:index")
+
+    return render(request, "home/add_recipe.html")
