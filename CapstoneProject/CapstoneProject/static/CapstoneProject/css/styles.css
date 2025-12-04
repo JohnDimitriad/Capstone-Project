@@ -165,3 +165,12 @@ body {
 .col-md-4 {
     align-self: flex-start;
 }
+
+#chefgpt-response {
+    white-space: pre-wrap;
+    font-size: 0.95rem;
+    max-width: 650px;
+    max-height: 350px;
+    overflow-y: auto;
+    padding: 5px 0;
+}

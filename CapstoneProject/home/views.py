@@ -10,91 +10,120 @@ from .models import Recipe, Interaction
 from django.db.models import Avg, Count, Q
 from django.http import JsonResponse
 from django.contrib import messages
-from .forms import EditProfileForm
+from .forms import EditProfileForm, ReviewForm
 from django.conf import settings
 from django.db import models
+from datetime import date
 from openai import OpenAI
-import os, json
+import random, re
 
 
 def get_openai_client():
     return OpenAI(api_key=settings.OPENAI_API_KEY)
 
+from django.http import JsonResponse
+from django.db.models import Avg
+from .models import Recipe, Interaction
+import re
+
 def chefgpt(request):
-    if request.method == "POST":
-        question = request.POST.get("question", "").strip()
+    if request.method != "POST":
+        return JsonResponse({"error": "Invalid request"}, status=400)
 
-        if not question:
-            return JsonResponse({"error": "Empty question"}, status=400)
+    question = request.POST.get("question", "").strip()
+    if not question:
+        return JsonResponse({"error": "Empty question"}, status=400)
 
-        # --- Step 1: Do a broad search for possible matches ---
-        initial_matches = Recipe.objects.filter(
-            Q(name__icontains=question) |
-            Q(description__icontains=question)
+    #Extract requested ingredients from question
+    ingredient_pattern = re.search(r"(?:with|ingredients?:)\s*(.+)", question, re.IGNORECASE)
+    requested_ingredients = []
+    if ingredient_pattern:
+        requested_ingredients = [i.strip().lower() for i in ingredient_pattern.group(1).split(",")]
+
+    #Pre-filter recipes
+    matching_recipes = []
+
+    for recipe in Recipe.objects.all():
+        recipe_ings = [i.lower() for i in recipe.get_ingredients()]
+
+        if requested_ingredients:
+            if all(ing in recipe_ings for ing in requested_ingredients):
+                matching_recipes.append(recipe)
+        else:
+            if (question.lower() in recipe.name.lower() or
+                question.lower() in recipe.description.lower() or
+                any(question.lower() in tag.lower() for tag in recipe.get_tags())):
+                matching_recipes.append(recipe)
+
+    #Rank by average rating
+    def get_average_rating(recipe):
+        ratings = recipe.interactions.all().values_list("rating", flat=True)
+        return sum(ratings)/len(ratings) if ratings else 0
+
+    matching_recipes.sort(key=get_average_rating, reverse=True)
+
+    top_recipes = matching_recipes[:5]
+
+    if not top_recipes:
+        return JsonResponse({"answer": "I couldn’t find any matching recipes in our database."})
+
+    #Build structured summaries for GPT
+    recipe_summaries = []
+    for r in top_recipes:
+        ingredients = r.get_ingredients()
+        steps = r.get_steps()
+        nutrition = r.get_nutrition_info()
+
+        #Create a structured string for GPT
+        nutrition_text = ""
+        if nutrition:
+            nutrition_text = "\n## Nutrition (per serving)\n" + "\n".join(
+                [f"- {label}: {value}" for label, value in nutrition]
+            )
+
+        recipe_summary = f"""Name: {r.name}
+        Rating: {get_average_rating(r):.1f}/5
+        Preparation Time: {r.minutes} minutes
+
+        Ingredients:
+        - {"\n- ".join(ingredients)}
+
+        Description:
+        {r.description}
+
+        Steps:
+        {"".join([f"{i+1}. {step}\n" for i, step in enumerate(steps)])}
+        {nutrition_text}
+        """
+        recipe_summaries.append(recipe_summary)
+
+    database_context = "\n\n".join(recipe_summaries)
+
+    #Ask GPT
+    try:
+        client = get_openai_client()
+        system_prompt = (
+            "You are ChefGPT, a cooking assistant. Only use the recipes provided below. "
+            "Format all recipes in clean Markdown-style with sections: Rating \n, Preparation Time \n, Ingredients (bullet list) \n, Steps (numbered list) \n, Description \n, and Nutrition \n. "
+            "If the user asks for specific ingredients or preferences, recommend the best-matching recipe. "
+            "Provide a polite, friendly tone, and do not invent recipes.\n\n"
+            f"Available recipes:\n{database_context}"
         )
 
-        # --- Step 2: Fallback — search manually in JSON-like fields ---
-        related_recipes = list(initial_matches)
-        question_lower = question.lower()
+        response = client.chat.completions.create(
+            model="gpt-3.5-turbo",
+            messages=[
+                {"role": "system", "content": system_prompt},
+                {"role": "user", "content": question}
+            ],
+            max_tokens=700
+        )
 
-        for recipe in Recipe.objects.all():
-            # Skip duplicates
-            if recipe in related_recipes:
-                continue
+        answer = response.choices[0].message.content
+        return JsonResponse({"answer": answer})
 
-            # Check inside ingredients, tags
-            ingredients = " ".join(recipe.get_ingredients()).lower()
-            tags = " ".join(recipe.get_tags()).lower()
-
-            if question_lower in ingredients or question_lower in tags:
-                related_recipes.append(recipe)
-
-        # Limit to top 5
-        related_recipes = related_recipes[:5]
-
-        # --- Step 3: Handle no matches ---
-        if not related_recipes:
-            return JsonResponse({
-                "answer": "I couldn’t find any matching recipes in our database."
-            })
-
-        # --- Step 4: Build database context for GPT ---
-        recipe_summaries = []
-        for r in related_recipes:
-            ingredients = ", ".join(r.get_ingredients()[:5])
-            recipe_summaries.append(
-                f"{r.name} — {r.description[:100]}... | Ingredients: {ingredients}"
-            )
-
-        database_context = "\n".join(recipe_summaries)
-
-        # --- Step 5: Ask GPT, but constrain it to the DB context ---
-        try:
-            client = get_openai_client()
-            response = client.chat.completions.create(
-                model="gpt-3.5-turbo",
-                messages=[
-                    {
-                        "role": "system",
-                        "content": (
-                            "You are ChefGPT, a cooking assistant that only uses recipes "
-                            "from the provided internal database. Do not make up new recipes. "
-                            "If asked for a recipe, base your answer strictly on the database entries below.\n\n"
-                            f"Available recipes:\n{database_context}"
-                        ),
-                    },
-                    {"role": "user", "content": question},
-                ],
-                max_tokens=300,
-            )
-
-            answer = response.choices[0].message.content
-            return JsonResponse({"answer": answer})
-
-        except Exception as e:
-            return JsonResponse({"error": str(e)}, status=500)
-
-    return JsonResponse({"error": "Invalid request"}, status=400)
+    except Exception as e:
+        return JsonResponse({"error": str(e)}, status=500)
 
 def login_view(request):
     if request.method == 'POST':
@@ -144,8 +173,6 @@ def register(request):
     # Render the registration page for GET requests
     return render(request, 'home/register.html')
 
-
-
 def home(request):
     # Annotate recipes with avg rating + number of reviews
     all_recipes = (
@@ -163,6 +190,18 @@ def home(request):
             ing = ing.strip().capitalize()
             all_ingredients.add(ing)
 
+    common_ingredients = [
+        "Olive oil", "Garlic", "Onion", "Butter", "Chicken",
+        "Pasta", "Tomato", "Eggs", "Flour", "Sugar"
+    ]
+
+    # Merge sets
+    all_ingredients.update(common_ingredients)
+
+    # Sort ingredients: common ones first, then the rest alphabetically
+    sorted_ingredients = common_ingredients + sorted(all_ingredients - set(common_ingredients))
+
+
     # Paginate — show 10 recipes per page
     paginator = Paginator(all_recipes, 10)
     page_number = request.GET.get('page')
@@ -170,28 +209,59 @@ def home(request):
 
     context = {
         'page_obj': page_obj,
-        'all_ingredients': sorted(all_ingredients),
+        'all_ingredients': sorted_ingredients,
     }
 
     return render(request, 'home/index.html', context)
+
+def feeling_lucky(request):
+    recipe_ids = list(Recipe.objects.values_list("recipe_id", flat=True))
+
+    if not recipe_ids:
+        messages.error(request, "No recipes available.")
+        return redirect("home:index")
+
+    random_id = random.choice(recipe_ids)
+    return redirect("home:recipe", recipe_id=random_id)
 
 def recipe(request, recipe_id):
     recipe = get_object_or_404(Recipe, recipe_id=recipe_id)
     interactions = Interaction.objects.filter(recipe=recipe).order_by('-date')
 
-    # Parse JSON fields for display
-    nutrition = recipe.get_nutrition()
-    ingredients = recipe.get_ingredients()
-    steps = recipe.get_steps()
-    tags = recipe.get_tags()
+    user_review = None
+    if request.user.is_authenticated:
+        user_review = Interaction.objects.filter(
+            recipe=recipe,
+            user_id=request.user.id
+        ).first()
+
+    if request.method == "POST":
+        if not request.user.is_authenticated:
+            return redirect("home:login")
+
+        if user_review:
+            messages.error(request, "You have already submitted a review.")
+        else:
+            form = ReviewForm(request.POST)
+            if form.is_valid():
+                new_review = form.save(commit=False)
+                new_review.user_id = request.user.id
+                new_review.date = date.today()
+                new_review.recipe = recipe
+                new_review.save()
+                return redirect("home:recipe", recipe_id=recipe_id)
+    else:
+        form = ReviewForm()
 
     return render(request, 'home/recipe.html', {
         'recipe': recipe,
-        'nutrition': nutrition,
-        'ingredients': ingredients,
-        'steps': steps,
-        'tags': tags,
+        'ingredients': recipe.get_ingredients(),
+        'steps': recipe.get_steps(),
+        'tags': recipe.get_tags(),
+        'nutrition': recipe.get_nutrition(),
         'interactions': interactions,
+        'form': form,
+        'user_review': user_review,
     })
 
 @require_GET
@@ -218,33 +288,77 @@ def load_recipes(request):
 
     return JsonResponse({"recipes": data})
 
+@require_GET
 def filter_recipes_by_ingredient(request):
-    """
-    Returns all recipes that contain a given ingredient.
-    Used by AJAX when clicking an ingredient button.
-    """
+    ingredients = request.GET.getlist("ingredient")
+    page_number = int(request.GET.get("page", 1))
+    per_page = 10
+
+    if not ingredients:
+        return JsonResponse({"error": "No ingredients provided"}, status=400)
+
+    # Query all recipes in DB
+    all_recipes = Recipe.objects.all()
+
+    # Filter recipes containing all selected ingredients (AND logic)
+    filtered_recipes = []
+    for recipe in all_recipes:  # <-- iterates over entire database
+        recipe_ings = [ing.lower() for ing in recipe.get_ingredients()]
+        if all(any(sel_ing.lower() in ing for ing in recipe_ings) for sel_ing in ingredients):
+            filtered_recipes.append(recipe)
+
+    # Annotate ratings
+    for r in filtered_recipes:
+        r.avg_rating = r.interactions.aggregate(avg=Avg("rating"))["avg"] or 0
+        r.review_count = r.interactions.count()
+
+    # Paginate filtered recipes
+    total = len(filtered_recipes)
+    num_pages = (total + per_page - 1) // per_page
+    start = (page_number - 1) * per_page
+    end = start + per_page
+    page_recipes = filtered_recipes[start:end]
+
+    recipes_list = [
+        {
+            "name": r.name,
+            "recipe_id": r.recipe_id,
+            "avg_rating": round(r.avg_rating, 2),
+            "review_count": r.review_count,
+        }
+        for r in page_recipes
+    ]
+
+    pagination = {
+        "current": page_number,
+        "num_pages": num_pages,
+        "has_previous": page_number > 1,
+        "has_next": page_number < num_pages,
+        "page_range": list(range(1, num_pages + 1)),
+    }
+
+    return JsonResponse({"recipes": recipes_list, "pagination": pagination})
+
+def add_recipe(request):
     if request.method == "POST":
-        data = json.loads(request.body)
-        ingredient = data.get("ingredient", "").strip().lower()
+        Recipe.objects.create(
+            name = request.POST["name"],
+            recipe_id = request.POST["recipe_id"],
+            minutes = request.POST["minutes"],
+            contributor_id = request.POST["contributor_id"],
+            submitted = request.POST["submitted"],
+            description = request.POST["description"],
+            tags = request.POST["tags"],
+            nutrition = request.POST["nutrition"],
+            n_steps = request.POST["n_steps"],
+            steps = request.POST["steps"],
+            ingredients = request.POST["ingredients"],
+            n_ingredients = request.POST["n_ingredients"],
+        )
 
-        if not ingredient:
-            return JsonResponse({"error": "No ingredient provided"}, status=400)
+        return redirect("home:index")
 
-        # Fetch recipes containing the ingredient
-        matched_recipes = []
-        for recipe in Recipe.objects.all():
-            ingredients = [ing.lower() for ing in recipe.get_ingredients()]
-            if any(ingredient in ing for ing in ingredients):
-                matched_recipes.append({
-                    "name": recipe.name,
-                    "recipe_id": recipe.recipe_id,
-                    "avg_rating": getattr(recipe, "avg_rating", None),
-                    "review_count": recipe.interactions.count(),
-                })
-
-        return JsonResponse({"recipes": matched_recipes})
-
-    return JsonResponse({"error": "Invalid request method"}, status=405)
+    return render(request, "home/add_recipe.html")
 
 @login_required
 def profile(request):
@@ -280,25 +394,3 @@ def edit_profile(request):
 def logout_view(request):
     logout(request)
     return redirect('home:login')
-
-@staff_member_required
-def add_recipe(request):
-    if request.method == "POST":
-        Recipe.objects.create(
-            name = request.POST["name"],
-            recipe_id = request.POST["recipe_id"],
-            minutes = request.POST["minutes"],
-            contributor_id = request.POST["contributor_id"],
-            submitted = request.POST["submitted"],
-            description = request.POST["description"],
-            tags = request.POST["tags"],
-            nutrition = request.POST["nutrition"],
-            n_steps = request.POST["n_steps"],
-            steps = request.POST["steps"],
-            ingredients = request.POST["ingredients"],
-            n_ingredients = request.POST["n_ingredients"],
-        )
-
-        return redirect("home:index")
-
-    return render(request, "home/add_recipe.html")

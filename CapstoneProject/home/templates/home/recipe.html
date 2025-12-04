@@ -46,11 +46,9 @@
                 </ul>
                 {% if user.is_authenticated %}
                 <ul class="navbar-nav">
-                    {% if user.is_staff %}
                     <li class="nav-item">
-                        <a class="nav-link" href="{% url 'home:add_recipe' %}">Staff Changes</a>
+                        <a class="nav-link" href="{% url 'home:add_recipe' %}">Add a Recipe</a>
                     </li>
-                    {% endif %}
                     <!-- If user is logged in, show "View Profile" and hide login/register -->
                     <li class="nav-item">
                         <a class="nav-link" href="{% url 'home:profile' %}">View Profile</a>
@@ -131,6 +129,25 @@
                 </div>
 
                 <!-- Reviews -->
+                 <div class="my-4">
+                <h3>Leave a Review</h3>
+
+                {% if user.is_authenticated %}
+                    {% if user_review %}
+                        <p>You already reviewed this recipe: <strong>{{ user_review.rating }} Stars</strong></p>
+                        <p>{{ user_review.review }}</p>
+                    {% else %}
+                        <form method="post">
+                            {% csrf_token %}
+                            {{ form.as_p }}
+                            <button class="btn btn-primary">Submit Review</button>
+                        </form>
+                    {% endif %}
+                {% else %}
+                    <p><a href="{% url 'home:login' %}">Log in</a> to leave a review.</p>
+                {% endif %}
+            </div>
+            <hr>
                 <div class="card mb-4 shadow-sm">
                     <div class="card-header bg-info text-white">
                         Reviews
@@ -153,15 +170,23 @@
                 <a href="{% url 'home:index' %}" class="btn btn-primary mt-3">← Back to Recipes</a>
             </div>
 
-            <!-- Sidebar (optional) -->
+            <!-- Sidebar-->
             <div class="col-lg-4">
                 <div class="card mb-4 shadow-sm">
                     <div class="card-header bg-dark text-white">
                         Recipe Info
                     </div>
                     <div class="card-body">
+                        <p><strong>Recipe id:</strong> {{ recipe.recipe_id }}</p>
                         <p><strong>Name:</strong> {{ recipe.name }}</p>
                         <p><strong>Submitted:</strong> {{ recipe.submitted }}</p>
+                        <p><strong>Submitted by user:</strong>
+                            {% if recipe.contributor_id %}
+                                User #{{ recipe.contributor_id }}
+                            {% else %}
+                                Unknown
+                            {% endif %}
+                        </p>
                         <p><strong>Prep time:</strong> {{ recipe.minutes }} min</p>
                         <p><strong>Tags:</strong> {{ tags|join:", " }}</p>
                     </div>
