@@ -394,3 +394,11 @@ def edit_profile(request):
 def logout_view(request):
     logout(request)
     return redirect('home:login')
+
+@login_required
+def my_recipes(request):
+    # only get recipes owned by logged-in user
+    user_recipes = Recipe.objects.filter(contributor_id=request.user.id)
+    return render(request, 'home/my_recipes.html', {
+        'recipes': user_recipes,
+    })

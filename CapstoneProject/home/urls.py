@@ -15,5 +15,6 @@ urlpatterns = [
     path('profile/edit/', views.edit_profile, name='edit_profile'),
     path('logout/', views.logout_view, name='logout'),
     path('load_recipes/', views.load_recipes, name='load_recipes'),  # AJAX route
-    path("filter_recipes_by_ingredient/", views.filter_recipes_by_ingredient, name="filter_recipes_by_ingredient")
+    path("filter_recipes_by_ingredient/", views.filter_recipes_by_ingredient, name="filter_recipes_by_ingredient"),
+    path('my_recipes/', views.my_recipes, name='my_recipes')
 ]
