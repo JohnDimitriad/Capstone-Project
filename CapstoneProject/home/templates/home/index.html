@@ -20,7 +20,7 @@
     <script src="{% static 'CapstoneProject/javascript/ingredients.js' %}" defer></script>
     <script src="{% static 'CapstoneProject/javascript/chefgpt.js' %}" defer></script>
     <script src="{% static 'CapstoneProject/javascript/load_recipes.js' %}" defer></script>
-    <script src="{% static 'CapstoneProject/javascript/filter_recipes.js' %}" defer></script>
+
     
     <!-- jQuery -->
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
@@ -100,8 +100,16 @@
                             {% endfor %}
                         </div>
                         <!-- Search box -->
-                        <div class="mb-3">
-                            <input type="text" class="form-control" placeholder="Search for an Ingredient">
+                        <div class="input-group mb-3">
+                            <input 
+                                type="text" 
+                                id="ingredient-search" 
+                                class="form-control" 
+                                placeholder="Search for an ingredient..."
+                            >
+                            <button class="btn btn-outline-secondary" id="ingredient-search-btn">
+                                <i class="bi bi-search"></i>
+                            </button>
                         </div>   
                         <div class="text-center mt-3">
                             <button id="show-more-btn" class="btn btn-primary btn-sm">Show More</button>

@@ -166,11 +166,10 @@ body {
     align-self: flex-start;
 }
 
-#chefgpt-response {
-    white-space: pre-wrap;
-    font-size: 0.95rem;
-    max-width: 650px;
-    max-height: 350px;
-    overflow-y: auto;
-    padding: 5px 0;
+.step-done {
+    text-decoration: line-through;
+    opacity: 0.35;
+}
+.step-text {
+    transition: opacity 0.3s ease, text-decoration-color 0.3s ease;
 }
