@@ -339,21 +339,26 @@ def filter_recipes_by_ingredient(request):
 
     return JsonResponse({"recipes": recipes_list, "pagination": pagination})
 
+
+@login_required
 def add_recipe(request):
     if request.method == "POST":
+        # Auto-generate a 10-digit recipe_id
+        recipe_id = ''.join([str(random.randint(0, 9)) for _ in range(10)])
+
         Recipe.objects.create(
-            name = request.POST["name"],
-            recipe_id = request.POST["recipe_id"],
-            minutes = request.POST["minutes"],
-            contributor_id = request.POST["contributor_id"],
-            submitted = request.POST["submitted"],
-            description = request.POST["description"],
-            tags = request.POST["tags"],
-            nutrition = request.POST["nutrition"],
-            n_steps = request.POST["n_steps"],
-            steps = request.POST["steps"],
-            ingredients = request.POST["ingredients"],
-            n_ingredients = request.POST["n_ingredients"],
+            name=request.POST["name"],
+            recipe_id=recipe_id,  # automatically generated
+            minutes=request.POST["minutes"],
+            contributor_id=request.user.username,  # use the logged-in user's username
+            submitted=date.today(),
+            description=request.POST["description"],
+            tags=request.POST["tags"],
+            nutrition=request.POST["nutrition"],
+            n_steps=request.POST["n_steps"],
+            steps=request.POST["steps"],
+            ingredients=request.POST["ingredients"],
+            n_ingredients=request.POST["n_ingredients"],
         )
 
         return redirect("home:index")
