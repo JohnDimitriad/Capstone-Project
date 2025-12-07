@@ -79,16 +79,10 @@
     <div class="container mt-4">
         <h2>My Recipes</h2>
         <div class="row">
-
             {% if recipes %}
                 {% for recipe in recipes %}
                 <div class="col-md-4 mb-4">
                     <div class="card shadow-sm h-100">
-
-                        {% if recipe.image %}
-                            <img src="{{ recipe.image.url }}" class="card-img-top" alt="{{ recipe.name }}">
-                        {% endif %}
-
                         <div class="card-body">
                             <h5 class="card-title">{{ recipe.name }}</h5>
                             <p class="card-text">{{ recipe.description|truncatechars:100 }}</p>
@@ -104,7 +98,35 @@
             {% else %}
                 <p>You haven't added any recipes yet.</p>
             {% endif %}
+        </div>
+    </div>
 
+    <div class="container mt-4">
+        <hr>
+        <h2 class="mb-3">★ My Favorites</h2>
+        <div class="row">
+            {% if favorites %}
+                {% for recipe in favorites %}
+                <div class="col-md-4 mb-4">
+                <div class="card shadow-sm h-100 hover-shadow position-relative">
+                    <a href="{% url 'home:toggle_favorite' recipe.recipe_id %}" class="btn btn-outline-warning btn-sm position-absolute top-0 end-0 m-2" title="Remove from favorites">
+                        <i class="bi bi-star-fill text-warning"></i>
+                    </a>
+
+                    <div class="card-body">
+                        <h5 class="card-title">{{ recipe.name }}</h5>
+                        <p class="card-text">{{ recipe.description|truncatechars:100 }}</p>
+
+                        <a href="{% url 'home:recipe' recipe.recipe_id %}" class="btn btn-primary w-100">
+                            View Recipe
+                        </a>
+                    </div>
+                </div>
+            </div>
+                {% endfor %}
+            {% else %}
+                <p class="text-muted">You haven't favorited any recipes yet.</p>
+            {% endif %}
         </div>
     </div>
 

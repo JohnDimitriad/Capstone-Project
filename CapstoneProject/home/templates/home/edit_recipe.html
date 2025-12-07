@@ -1,0 +1,135 @@
+{% load static %}
+
+<html lang="en">
+<head>
+    <meta name="description" content="Edit a Recipe"/>
+    <meta http-equiv="Author" content="Ioannis Iason Dimitriadis"/>
+    <title>Edit Recipe Page</title>
+    <link rel="icon" href="{% static 'CapstoneProject/images/logo.png' %}" type="image/png">
+    
+    <!-- CSS -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.3.0/font/bootstrap-icons.css">
+    <link href="{% static 'CapstoneProject/css/styles.css' %}" type="text/css" rel="stylesheet">
+    
+    <!-- Bootstrap -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous"></script>
+    
+    <!-- JavaScript -->
+    <script src="{% static 'CapstoneProject/javascript/darkmode.js' %}" defer></script>
+    
+    <!-- jQuery -->
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+</head>
+<body>
+    <!-- Navigation (same as add_recipe.html) -->
+    <nav class="navbar navbar-expand-lg bg-body-tertiary sticky-top">
+        <div class="container-fluid">
+            <a class="navbar-brand" href="{% url 'home:index' %}">
+                <img src="{% static 'CapstoneProject/images/logo.png' %}" alt="Logo" width="30" height="24" class="d-inline-block align-text-top">
+                ChefGPT
+            </a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNavDropdown" aria-controls="navbarNavDropdown" aria-expanded="false" aria-label="Toggle navigation">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNavDropdown">
+                <ul class="navbar-nav me-auto">
+                    <li class="nav-item">
+                        <a class="nav-link" href="{% url 'home:index' %}">Home Page</a>
+                    </li>
+                    <li class="nav-item">
+                        <button id="dark-mode-toggle" class="btn btn-outline-secondary nav-link">Enable Dark Mode</button>
+                    </li>
+                </ul>
+                {% if user.is_authenticated %}
+                <ul class="navbar-nav">
+                    <li class="nav-item">
+                        <a class="nav-link" href="{% url 'home:profile' %}">View Profile</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{% url 'home:logout' %}">Logout</a>
+                    </li>
+                {% else %}
+                    <li class="nav-item">
+                        <a class="nav-link" href="{% url 'home:login' %}">Login</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{% url 'home:register' %}">Register</a>
+                    </li>
+                {% endif %}
+                </ul>
+            </div>
+        </div>
+    </nav>    
+    
+    <!-- Main Content -->
+    <div class="container my-5">
+        <h2>Edit Recipe: {{ recipe.name }}</h2>
+
+        <form method="post" enctype="multipart/form-data">
+            {% csrf_token %}
+
+            <div class="mb-3">
+                <label for="name" class="form-label">Recipe Name</label>
+                <input type="text" id="name" name="name" class="form-control" value="{{ recipe.name }}" required>
+            </div>
+
+            <div class="mb-3">
+                <label for="minutes" class="form-label">Minutes Required</label>
+                <input type="number" id="minutes" name="minutes" class="form-control" min="1" value="{{ recipe.minutes }}" required>
+            </div>
+
+            <div class="mb-3">
+                <label for="description" class="form-label">Recipe Description</label>
+                <textarea id="description" name="description" class="form-control" rows="4" required>{{ recipe.description }}</textarea>
+            </div>
+
+            <div class="mb-3">
+                <label for="tags" class="form-label">Tags</label>
+                <input type="text" id="tags" name="tags" class="form-control" value='{{ recipe.tags }}' required>
+            </div>
+
+            <div class="mb-3">
+                <label for="nutrition" class="form-label">Nutrition</label>
+                <input type="text" id="nutrition" name="nutrition" class="form-control" value='{{ recipe.nutrition }}' required>
+            </div>
+
+            <div class="mb-3">
+                <label for="n_steps" class="form-label">Number of Steps</label>
+                <input type="number" id="n_steps" name="n_steps" class="form-control" value="{{ recipe.n_steps }}" required>
+            </div>
+
+            <div class="mb-3">
+                <label for="steps" class="form-label">Steps</label>
+                <textarea id="steps" name="steps" class="form-control" rows="3" required>{{ recipe.steps }}</textarea>
+            </div>
+
+            <div class="mb-3">
+                <label for="n_ingredients" class="form-label">Number of Ingredients</label>
+                <input type="number" id="n_ingredients" name="n_ingredients" class="form-control" value="{{ recipe.n_ingredients }}" required>
+            </div>
+
+            <div class="mb-3">
+                <label for="ingredients" class="form-label">Ingredients</label>
+                <textarea id="ingredients" name="ingredients" class="form-control" rows="3" required>{{ recipe.ingredients }}</textarea>
+            </div>
+
+            <button type="submit" class="btn btn-success mt-3">Save Changes</button>
+        </form>
+
+        <a href="{% url 'home:recipe' recipe.recipe_id %}" class="btn btn-secondary mt-3">Back to Recipe</a>
+    </div>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <img src="{% static 'CapstoneProject/images/logo.png' %}" alt="Logo" width="30" height="24" class="d-inline-block align-text-top">
+        <p>ChefGPT © 2025</p>
+        <div class="social-media">
+            <p>Contact us at: website@acg.edu or by using the following links:</p>
+            <a href="https://www.facebook.com" target="_blank"><i class="bi bi-facebook"></i></a>
+            <a href="https://www.twitter.com" target="_blank"><i class="bi bi-twitter"></i></a>
+            <a href="https://www.instagram.com" target="_blank"><i class="bi bi-instagram"></i></a>
+        </div>
+    </footer>
+</body>
+</html>

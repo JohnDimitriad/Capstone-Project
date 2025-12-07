@@ -1,4 +1,5 @@
 document.addEventListener("DOMContentLoaded", () => {
+    // Ingredient list elements
     const ingredientItems = Array.from(document.querySelectorAll(".ingredient-item"));
     const searchBox = document.getElementById("ingredient-search");
     const searchBtn = document.getElementById("ingredient-search-btn");
@@ -6,41 +7,103 @@ document.addEventListener("DOMContentLoaded", () => {
     const showLessBtn = document.getElementById("show-less-btn");
     const clearSelectionBtn = document.getElementById("clear-selection-btn");
 
-    let visibleCount = 20;
-    const increment = 20;
+    // Recipe elements
+    const recipeCards = document.querySelectorAll(".accordion-item");
+    const ingredientButtons = document.querySelectorAll(".ingredient-btn");
+
+    // Config
+    const increment = 10;
+    let visibleCount = increment;
+    let currentItems = [];
+
+    // Selected ingredients for recipe filtering
+    let selectedIngredients = [];
+
+    // RECIPE FILTERING
+    const filterRecipes = () => {
+        if (selectedIngredients.length === 0) {
+            recipeCards.forEach(card => card.style.display = "");
+            return;
+        }
+
+        recipeCards.forEach(card => {
+            const recipeIngredients = card.dataset.ingredients.toLowerCase();
+
+            const matchesAll = selectedIngredients.every(ing =>
+                recipeIngredients.includes(ing)
+            );
+
+            card.style.display = matchesAll ? "" : "none";
+        });
+    };
+
+    // INGREDIENT BUTTON TOGGLE
+    ingredientButtons.forEach(btn => {
+        btn.addEventListener("click", () => {
+            btn.classList.toggle("btn-success");
+            btn.classList.toggle("btn-outline-secondary");
+
+            const ing = btn.dataset.ingredient.toLowerCase();
+
+            if (btn.classList.contains("btn-success")) {
+                if (!selectedIngredients.includes(ing)) {
+                    selectedIngredients.push(ing);
+                }
+            } else {
+                selectedIngredients = selectedIngredients.filter(i => i !== ing);
+            }
+
+            filterRecipes();
+        });
+    });
+
+    // INGREDIENT SEARCH + LIST
+    const renderInitial = () => {
+        currentItems = ingredientItems.slice(0, increment);
+        ingredientItems.forEach(item => item.style.display = "none");
+        currentItems.forEach(item => item.style.display = "");
+
+        visibleCount = increment;
+
+        showMoreBtn.style.display = ingredientItems.length > increment ? "inline-block" : "none";
+        showLessBtn.style.display = "none";
+    };
 
     const renderList = () => {
-        ingredientItems.forEach((item, index) => {
+        currentItems.forEach((item, index) => {
             item.style.display = index < visibleCount ? "" : "none";
         });
-        if (showMoreBtn) showMoreBtn.style.display = visibleCount < ingredientItems.length ? "inline-block" : "none";
-        if (showLessBtn) showLessBtn.style.display = visibleCount > 20 ? "inline-block" : "none";
+
+        showMoreBtn.style.display = visibleCount < currentItems.length ? "inline-block" : "none";
+        showLessBtn.style.display = visibleCount > increment ? "inline-block" : "none";
     };
 
     const filterIngredients = () => {
         const term = searchBox.value.toLowerCase().trim();
 
         if (!term) {
-            visibleCount = 20;
-            renderList();
+            visibleCount = increment;
+            renderInitial();
             return;
         }
 
-        ingredientItems.forEach(item => {
+        currentItems = ingredientItems.filter(item => {
             const btn = item.querySelector(".ingredient-btn");
-            if (!btn) return;
-            const name = btn.dataset.ingredient.toLowerCase();
-            item.style.display = name.includes(term) ? "" : "none";
+            return btn && btn.dataset.ingredient.toLowerCase().includes(term);
         });
 
-        // Hide Show More / Less while searching
-        if (showMoreBtn) showMoreBtn.style.display = "none";
-        if (showLessBtn) showLessBtn.style.display = "none";
+        visibleCount = Math.min(increment, currentItems.length);
+        ingredientItems.forEach(item => item.style.display = "none");
+        renderList();
     };
 
-    // Search box input triggers live filter (optional)
+    // SEARCH EVENTS
+    if (searchBtn) {
+        searchBtn.type = "button";
+        searchBtn.addEventListener("click", filterIngredients);
+    }
+
     if (searchBox) {
-        searchBox.addEventListener("input", filterIngredients);
         searchBox.addEventListener("keypress", e => {
             if (e.key === "Enter") {
                 e.preventDefault();
@@ -49,44 +112,33 @@ document.addEventListener("DOMContentLoaded", () => {
         });
     }
 
-    // Search button triggers filter
-    if (searchBtn) {
-        searchBtn.addEventListener("click", e => {
-            e.preventDefault();
-            filterIngredients();
-        });
-    }
-
-    // Show more / less buttons
+    // SHOW MORE / LESS
     if (showMoreBtn) showMoreBtn.addEventListener("click", () => {
-        visibleCount += increment;
+        visibleCount = Math.min(visibleCount + increment, currentItems.length);
         renderList();
     });
 
     if (showLessBtn) showLessBtn.addEventListener("click", () => {
-        visibleCount = 20;
+        visibleCount = increment;
         renderList();
     });
 
-    // Clear selection
+    // CLEAR SELECTION (global reset)
     if (clearSelectionBtn) clearSelectionBtn.addEventListener("click", () => {
-        ingredientItems.forEach(item => {
-            const btn = item.querySelector(".ingredient-btn");
-            if (!btn) return;
+
+        // reset ingredient buttons UI
+        ingredientButtons.forEach(btn => {
             btn.classList.remove("btn-success");
             btn.classList.add("btn-outline-secondary");
         });
+
+        selectedIngredients = [];
+        filterRecipes();
+
+        // reset ingredient list view
+        if (searchBox) searchBox.value = "";
+        renderInitial();
     });
 
-    // Toggle selection on ingredient buttons
-    ingredientItems.forEach(item => {
-        const btn = item.querySelector(".ingredient-btn");
-        if (!btn) return;
-        btn.addEventListener("click", () => {
-            btn.classList.toggle("btn-success");
-            btn.classList.toggle("btn-outline-secondary");
-        });
-    });
-
-    renderList();
+    renderInitial();
 });

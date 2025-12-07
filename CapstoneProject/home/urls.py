@@ -7,6 +7,7 @@ urlpatterns = [
     path('', views.home, name='index'),
     path('recipe/<int:recipe_id>/', views.recipe, name='recipe'),
     path("add_recipe/", views.add_recipe, name="add_recipe"),
+    path('recipe/edit/<int:recipe_id>/', views.edit_recipe, name='edit_recipe'),
     path("feeling-lucky/", views.feeling_lucky, name="feeling_lucky"),
     path('chefgpt/', views.chefgpt, name='chefgpt'),
     path('login/', views.login_view, name='login'),
@@ -14,7 +15,8 @@ urlpatterns = [
     path('profile/', views.profile, name='profile'),
     path('profile/edit/', views.edit_profile, name='edit_profile'),
     path('logout/', views.logout_view, name='logout'),
-    path('load_recipes/', views.load_recipes, name='load_recipes'),  # AJAX route
+    path('load_recipes/', views.load_recipes, name='load_recipes'),
     path("filter_recipes_by_ingredient/", views.filter_recipes_by_ingredient, name="filter_recipes_by_ingredient"),
+    path('recipe/<int:recipe_id>/favorite/', views.toggle_favorite, name='toggle_favorite'),
     path('my_recipes/', views.my_recipes, name='my_recipes')
 ]

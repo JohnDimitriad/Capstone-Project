@@ -6,7 +6,7 @@ from django.views.decorators.http import require_GET
 #from products.utils import get_top_rated_movies
 from django.contrib.auth.models import User
 from django.core.paginator import Paginator
-from .models import Recipe, Interaction
+from .models import Recipe, Interaction, Favorite
 from django.db.models import Avg, Count, Q
 from django.http import JsonResponse
 from django.contrib import messages
@@ -20,11 +20,6 @@ import random, re
 
 def get_openai_client():
     return OpenAI(api_key=settings.OPENAI_API_KEY)
-
-from django.http import JsonResponse
-from django.db.models import Avg
-from .models import Recipe, Interaction
-import re
 
 def chefgpt(request):
     if request.method != "POST":
@@ -253,6 +248,10 @@ def recipe(request, recipe_id):
     else:
         form = ReviewForm()
 
+    is_favorited = False
+    if request.user.is_authenticated:
+        is_favorited = Favorite.objects.filter(user=request.user, recipe=recipe).exists()
+
     return render(request, 'home/recipe.html', {
         'recipe': recipe,
         'ingredients': recipe.get_ingredients(),
@@ -262,6 +261,7 @@ def recipe(request, recipe_id):
         'interactions': interactions,
         'form': form,
         'user_review': user_review,
+        'is_favorited': is_favorited,
     })
 
 @require_GET
@@ -341,6 +341,16 @@ def filter_recipes_by_ingredient(request):
 
 
 @login_required
+def toggle_favorite(request, recipe_id):
+    recipe = get_object_or_404(Recipe, recipe_id=recipe_id)
+    favorite, created = Favorite.objects.get_or_create(user=request.user, recipe=recipe)
+
+    if not created:
+        favorite.delete()   # it was already a favorite → unfavorite
+
+    return redirect("home:recipe", recipe_id=recipe_id)
+
+@login_required
 def add_recipe(request):
     if request.method == "POST":
         # Auto-generate a 10-digit recipe_id
@@ -364,6 +374,35 @@ def add_recipe(request):
         return redirect("home:index")
 
     return render(request, "home/add_recipe.html")
+
+@login_required
+def edit_recipe(request, recipe_id):
+    recipe = get_object_or_404(Recipe, recipe_id=recipe_id)
+
+    # Only allow owner or admin
+    if not (request.user.is_superuser or request.user.id == recipe.contributor_id):
+        return redirect('home:index')
+
+    if request.method == "POST":
+        if "edit" in request.POST:
+            recipe.name = request.POST.get("name", recipe.name)
+            recipe.minutes = int(request.POST.get("minutes", recipe.minutes))
+            recipe.description = request.POST.get("description", recipe.description)
+            recipe.tags = request.POST.get("tags", recipe.tags)
+            recipe.nutrition = request.POST.get("nutrition", recipe.nutrition)
+            recipe.n_steps = int(request.POST.get("n_steps", recipe.n_steps))
+            recipe.steps = request.POST.get("steps", recipe.steps)
+            recipe.n_ingredients = int(request.POST.get("n_ingredients", recipe.n_ingredients))
+            recipe.ingredients = request.POST.get("ingredients", recipe.ingredients)
+
+            recipe.save()
+            return redirect('home:recipe', recipe_id=recipe.recipe_id)
+
+        elif "delete" in request.POST:
+            recipe.delete()
+            return redirect('home:index')
+
+    return render(request, "home/edit_recipe.html", {"recipe": recipe})
 
 @login_required
 def profile(request):
@@ -402,8 +441,13 @@ def logout_view(request):
 
 @login_required
 def my_recipes(request):
-    # only get recipes owned by logged-in user
-    user_recipes = Recipe.objects.filter(contributor_id=request.user.id)
-    return render(request, 'home/my_recipes.html', {
-        'recipes': user_recipes,
+    # Recipes the user created
+    created_recipes = Recipe.objects.filter(contributor_id=request.user.id)
+
+    # Recipes the user favorited
+    favorite_recipes = Recipe.objects.filter(favorite__user=request.user)
+
+    return render(request, "home/my_recipes.html", {
+        "recipes": created_recipes,
+        "favorites": favorite_recipes,
     })

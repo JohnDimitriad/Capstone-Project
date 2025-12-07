@@ -1,0 +1,5 @@
+"pip install dotenv" for the api key to load properly
+
+this zip contains the sql database so no need to load new recipes/interactions
+admin user credentials:
+admin | admin

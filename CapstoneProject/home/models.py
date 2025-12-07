@@ -1,3 +1,4 @@
+from django.contrib.auth.models import User
 from django.db import models
 import json, ast
 
@@ -85,3 +86,10 @@ class Interaction(models.Model):
 
     def __str__(self):
         return f"Review by User {self.user_id} for Recipe {self.recipe.name} (Rating: {self.rating})"
+
+class Favorite(models.Model):
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    recipe = models.ForeignKey(Recipe, on_delete=models.CASCADE)
+
+    class Meta:
+        unique_together = ('user', 'recipe')

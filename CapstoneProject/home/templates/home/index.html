@@ -21,7 +21,6 @@
     <script src="{% static 'CapstoneProject/javascript/chefgpt.js' %}" defer></script>
     <script src="{% static 'CapstoneProject/javascript/load_recipes.js' %}" defer></script>
 
-    
     <!-- jQuery -->
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 </head>
@@ -139,7 +138,7 @@
                                         <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse"
                                             data-bs-target="#collapse{{ forloop.counter }}" aria-expanded="false"
                                             aria-controls="collapse{{ forloop.counter }}">
-                                            <strong>{{ recipe.name }}</strong> — ⭐ {{ recipe.avg_rating|default:"N/A" }} ({{ recipe.review_count }} reviews)
+                                            <strong>{{ recipe.name }}</strong> — ⭐ {{ recipe.avg_rating|floatformat:2|default:"N/A" }} ({{ recipe.review_count }} reviews)
                                         </button>
                                     </h2>
                                     <div id="collapse{{ forloop.counter }}" class="accordion-collapse collapse"
