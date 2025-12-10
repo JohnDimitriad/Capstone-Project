@@ -26,12 +26,6 @@ body {
     flex: 1;
 }
 
-.banner img {
-    width: auto;
-    height: auto;
-    max-width: 100%;   /* prevents overflow */
-}
-
 /* Navigation Styling */
 .navigation {
     background-color: #333;
@@ -172,4 +166,12 @@ body {
 }
 .step-text {
     transition: opacity 0.3s ease, text-decoration-color 0.3s ease;
+}
+
+.banner-img {
+    width: 100%;         /* full width */
+    height: auto;        /* scale height proportionally */
+    max-height: 300px;   /* optional max height */
+    display: block;
+    object-fit: contain; /* keeps the full image inside the container */
 }

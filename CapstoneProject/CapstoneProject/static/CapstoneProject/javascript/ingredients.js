@@ -57,15 +57,13 @@ document.addEventListener("DOMContentLoaded", () => {
         });
     });
 
-    // INGREDIENT SEARCH + LIST
     const renderInitial = () => {
-        currentItems = ingredientItems.slice(0, increment);
+        currentItems = ingredientItems; 
         ingredientItems.forEach(item => item.style.display = "none");
-        currentItems.forEach(item => item.style.display = "");
+        visibleCount = Math.min(increment, currentItems.length);
+        currentItems.slice(0, visibleCount).forEach(item => item.style.display = "");
 
-        visibleCount = increment;
-
-        showMoreBtn.style.display = ingredientItems.length > increment ? "inline-block" : "none";
+        showMoreBtn.style.display = visibleCount < currentItems.length ? "inline-block" : "none";
         showLessBtn.style.display = "none";
     };
 
