@@ -3,14 +3,13 @@ from django.contrib.admin.views.decorators import staff_member_required
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
 from django.views.decorators.http import require_GET
-#from products.utils import get_top_rated_movies
+from .models import Recipe, Interaction, Favorite
+from .forms import EditProfileForm, ReviewForm
 from django.contrib.auth.models import User
 from django.core.paginator import Paginator
-from .models import Recipe, Interaction, Favorite
 from django.db.models import Avg, Count, Q
 from django.http import JsonResponse
 from django.contrib import messages
-from .forms import EditProfileForm, ReviewForm
 from django.conf import settings
 from django.db import models
 from datetime import date
@@ -33,7 +32,7 @@ def chefgpt(request):
 
     # Remove common user phrasing around recipe requests
     query = re.sub(
-        r"(hello | give me a|i want a|show me a|recipe for|please make|can you make|make me|provide|suggest|i have|i am allergic to)\s+",
+        r"(hello|give me a|give me|i want a|i want|show me a|show me|recipe for|please make|can you make|make me|provide|suggest|i have|i am allergic to)\s+",
         "",
         query
     )
