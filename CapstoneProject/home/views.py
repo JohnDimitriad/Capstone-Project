@@ -15,7 +15,7 @@ from django.conf import settings
 from django.db import models
 from datetime import date
 from openai import OpenAI
-import random, re
+import random, re, json
 
 
 def get_openai_client():
@@ -363,19 +363,32 @@ def add_recipe(request):
         # Auto-generate a 10-digit recipe_id
         recipe_id = ''.join([str(random.randint(0, 9)) for _ in range(10)])
 
+        # Convert input fields to JSON format
+        tags_input = request.POST.get("tags", "")  # e.g., easy, dinner
+        tags_json = json.dumps([t.strip() for t in tags_input.split(",") if t.strip()])
+
+        steps_input = request.POST.get("steps", "")  # e.g., Mix ingredients, Bake for 20 minutes
+        steps_json = json.dumps([s.strip() for s in steps_input.split(",") if s.strip()])
+
+        ingredients_input = request.POST.get("ingredients", "")  # e.g., flour, eggs, milk
+        ingredients_json = json.dumps([i.strip() for i in ingredients_input.split(",") if i.strip()])
+
+        nutrition_input = request.POST.get("nutrition", "")  # e.g., 100,5,10,50,20,8
+        nutrition_json = json.dumps([int(n) for n in nutrition_input.replace(",", " ").split() if n.strip()])
+
         Recipe.objects.create(
-            name=request.POST["name"],
-            recipe_id=recipe_id,  # automatically generated
-            minutes=request.POST["minutes"],
-            contributor_id=request.user.username,  # use the logged-in user's username
+            name=request.POST.get("name", ""),
+            recipe_id=recipe_id,
+            minutes=int(request.POST.get("minutes", 0)),
+            contributor_id=request.user.id,
             submitted=date.today(),
-            description=request.POST["description"],
-            tags=request.POST["tags"],
-            nutrition=request.POST["nutrition"],
-            n_steps=request.POST["n_steps"],
-            steps=request.POST["steps"],
-            ingredients=request.POST["ingredients"],
-            n_ingredients=request.POST["n_ingredients"],
+            description=request.POST.get("description", ""),
+            tags=tags_json,
+            nutrition=nutrition_json,
+            n_steps=int(request.POST.get("n_steps", 0)),
+            steps=steps_json,
+            ingredients=ingredients_json,
+            n_ingredients=int(request.POST.get("n_ingredients", 0)),
         )
 
         return redirect("home:index")
@@ -395,12 +408,39 @@ def edit_recipe(request, recipe_id):
             recipe.name = request.POST.get("name", recipe.name)
             recipe.minutes = int(request.POST.get("minutes", recipe.minutes))
             recipe.description = request.POST.get("description", recipe.description)
-            recipe.tags = request.POST.get("tags", recipe.tags)
-            recipe.nutrition = request.POST.get("nutrition", recipe.nutrition)
+
+            # Tags
+            tags_input = request.POST.get("tags", "")
+            try:
+                # If already JSON, keep it
+                recipe.tags = json.dumps(json.loads(tags_input))
+            except json.JSONDecodeError:
+                # Otherwise, split by comma
+                recipe.tags = json.dumps([t.strip() for t in tags_input.split(",")])
+
+            # Steps
+            steps_input = request.POST.get("steps", "")
+            try:
+                recipe.steps = json.dumps(json.loads(steps_input))
+            except json.JSONDecodeError:
+                recipe.steps = json.dumps([s.strip() for s in steps_input.split(";")])
+
+            # Ingredients
+            ingredients_input = request.POST.get("ingredients", "")
+            try:
+                recipe.ingredients = json.dumps(json.loads(ingredients_input))
+            except json.JSONDecodeError:
+                recipe.ingredients = json.dumps([i.strip() for i in ingredients_input.split(",")])
+
+            # Nutrition
+            nutrition_input = request.POST.get("nutrition", "")
+            try:
+                recipe.nutrition = json.dumps(json.loads(nutrition_input))
+            except json.JSONDecodeError:
+                recipe.nutrition = json.dumps([float(n.strip()) for n in nutrition_input.split(",")])
+
             recipe.n_steps = int(request.POST.get("n_steps", recipe.n_steps))
-            recipe.steps = request.POST.get("steps", recipe.steps)
             recipe.n_ingredients = int(request.POST.get("n_ingredients", recipe.n_ingredients))
-            recipe.ingredients = request.POST.get("ingredients", recipe.ingredients)
 
             recipe.save()
             return redirect('home:recipe', recipe_id=recipe.recipe_id)
