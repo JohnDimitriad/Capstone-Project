@@ -28,6 +28,16 @@ def chefgpt(request):
     question = request.POST.get("question", "").strip()
     if not question:
         return JsonResponse({"error": "Empty question"}, status=400)
+    
+    query = question.lower()
+
+    # Remove common user phrasing around recipe requests
+    query = re.sub(
+        r"(hello | give me a|i want a|show me a|recipe for|please make|can you make|make me|provide|suggest|i have|i am allergic to)\s+",
+        "",
+        query
+    )
+    query = query.replace("recipe", "").strip()
 
     #Extract requested ingredients from question
     ingredient_pattern = re.search(r"(?:with|ingredients?:)\s*(.+)", question, re.IGNORECASE)
@@ -45,9 +55,9 @@ def chefgpt(request):
             if all(ing in recipe_ings for ing in requested_ingredients):
                 matching_recipes.append(recipe)
         else:
-            if (question.lower() in recipe.name.lower() or
-                question.lower() in recipe.description.lower() or
-                any(question.lower() in tag.lower() for tag in recipe.get_tags())):
+            if (query in recipe.name.lower() or
+                query in recipe.description.lower() or
+                any(query in tag.lower() for tag in recipe.get_tags())):
                 matching_recipes.append(recipe)
 
     #Rank by average rating
@@ -98,10 +108,13 @@ def chefgpt(request):
     try:
         client = get_openai_client()
         system_prompt = (
-            "You are ChefGPT, a cooking assistant. Only use the recipes provided below. "
-            "Format all recipes in clean Markdown-style with sections: Rating \n, Preparation Time \n, Ingredients (bullet list) \n, Steps (numbered list) \n, Description \n, and Nutrition \n. "
-            "If the user asks for specific ingredients or preferences, recommend the best-matching recipe. "
-            "Provide a polite, friendly tone, and do not invent recipes.\n\n"
+            "You are ChefGPT, a helpful cooking assistant. You must only reference recipes provided below "
+            "and never make up new ones. Users may ask in natural language, including requests for recipes, "
+            "ingredient preferences, allergies, dietary restrictions, available ingredients, or general guidance. "
+            "Interpret their intent and provide the best matching recipe(s) from the list. "
+            "Always format your response in clear Markdown with these sections: "
+            "- Name\n- Rating\n- Preparation Time\n- Ingredients (bullet list)\n- Steps (numbered list)\n- Description\n- Nutrition (if available)\n\n"
+            "Be polite, concise, and helpful. Do not invent recipes or ingredients.\n\n"
             f"Available recipes:\n{database_context}"
         )
 
