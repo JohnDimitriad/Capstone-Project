@@ -247,6 +247,13 @@ def recipe(request, recipe_id):
                 return redirect("home:recipe", recipe_id=recipe_id)
     else:
         form = ReviewForm()
+    
+    if request.method == "POST" and "delete" in request.POST:
+        if request.user.is_authenticated and (request.user.is_superuser or request.user.id == recipe.contributor_id):
+            recipe.delete()
+            return redirect("home:index")
+        else:
+            messages.error(request, "You are not allowed to delete this recipe.")
 
     is_favorited = False
     if request.user.is_authenticated:

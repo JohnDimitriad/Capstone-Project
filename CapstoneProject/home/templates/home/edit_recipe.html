@@ -22,7 +22,7 @@
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 </head>
 <body>
-    <!-- Navigation (same as add_recipe.html) -->
+    <!-- Navigation -->
     <nav class="navbar navbar-expand-lg bg-body-tertiary sticky-top">
         <div class="container-fluid">
             <a class="navbar-brand" href="{% url 'home:index' %}">
@@ -114,7 +114,9 @@
                 <textarea id="ingredients" name="ingredients" class="form-control" rows="3" required>{{ recipe.ingredients }}</textarea>
             </div>
 
-            <button type="submit" class="btn btn-success mt-3">Save Changes</button>
+            <button type="submit" name="edit" value="1" class="btn btn-success mt-3">
+                Save Changes
+            </button>
         </form>
 
         <a href="{% url 'home:recipe' recipe.recipe_id %}" class="btn btn-secondary mt-3">Back to Recipe</a>
